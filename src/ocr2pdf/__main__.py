@@ -1,7 +1,5 @@
 from pathlib import Path
 
-import fire
-
 from ocr2pdf.ocr2pdf import ocr2pdf
 
 
@@ -10,4 +8,6 @@ def main(images: list[str], pdf: str):
 
 
 if __name__ == "__main__":
+    import fire
+
     fire.Fire(main)

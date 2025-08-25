@@ -5,14 +5,14 @@ from fontmod.picker import fz_encode_character_with_system_font
 from fontmod.context import FontContext
 
 from PIL import Image
-import pymupdf
-from pymupdf import mupdf
+import pypdf
+from pypdf import mupdf
 
 from ocr2pdf.common import settings
 from ocr2pdf.ocr.ms.page import Page as OCRPage
 
 
-_format_g = pymupdf.format_g
+_format_g = pypdf.format_g
 
 font_ctx = FontContext()
 
@@ -86,7 +86,7 @@ def shape_insert_single_line_text(
     Returns:
         dict with keys: 'success' (bool), 'char_spacing' (float), 'text_width' (float), 'rect_width' (float)
     """
-    rect = pymupdf.Rect(rect)
+    rect = pypdf.Rect(rect)
     if rect.is_empty or rect.is_infinite:
         raise ValueError("text box must be finite and not empty")
 
@@ -101,11 +101,11 @@ def shape_insert_single_line_text(
         }
 
     # 颜色处理
-    color_str = pymupdf.ColorCode(color, "c")
-    fill_str = pymupdf.ColorCode(fill, "f")
+    color_str = pypdf.ColorCode(color, "c")
+    fill_str = pypdf.ColorCode(fill, "f")
     if fill is None and render_mode == 0:  # ensure fill color for 0 Tr
         fill = color
-        fill_str = pymupdf.ColorCode(color, "f")
+        fill_str = pypdf.ColorCode(color, "f")
 
     # 可选内容处理
     optcont = self.page._get_optional_content(oc)
@@ -144,7 +144,7 @@ def shape_insert_single_line_text(
 
     if fontname == "auto":
         font = auto_detect_font(text)
-        pdf = pymupdf._as_pdf_document(self.doc)
+        pdf = pypdf._as_pdf_document(self.doc)
         font_obj = mupdf.pdf_add_simple_font(pdf, font, encoding)
         xref = mupdf.pdf_to_num(font_obj)
         fontdict = {}  # TODO:
@@ -154,7 +154,7 @@ def shape_insert_single_line_text(
             fontname=fname, fontfile=fontfile, encoding=encoding, set_simple=set_simple
         )
 
-    fontinfo = pymupdf.CheckFontInfo(self.doc, xref)
+    fontinfo = pypdf.CheckFontInfo(self.doc, xref)
 
     fontdict = fontinfo[1]
     ordering = fontdict["ordering"]
@@ -197,29 +197,29 @@ def shape_insert_single_line_text(
     #         return len(x) * fontsize
 
     # 形变处理
-    if pymupdf.CheckMorph(morph):
-        m1 = pymupdf.Matrix(
+    if pypdf.CheckMorph(morph):
+        m1 = pypdf.Matrix(
             1, 0, 0, 1, morph[0].x + self.x, self.height - morph[0].y - self.y
         )
         mat = ~m1 * morph[1] * m1
-        cm = _format_g(pymupdf.JM_TUPLE(mat)) + " cm\n"
+        cm = _format_g(pypdf.JM_TUPLE(mat)) + " cm\n"
     else:
         cm = ""
 
     # 根据旋转调整坐标和可用宽度
     if rot == 0:  # normal orientation
-        point = rect.tl + pymupdf.Point(0, fontsize * ascender)
+        point = rect.tl + pypdf.Point(0, fontsize * ascender)
         maxwidth = rect.width
     elif rot == 90:  # rotate counter clockwise
-        point = rect.bl + pymupdf.Point(fontsize * ascender, 0)
+        point = rect.bl + pypdf.Point(fontsize * ascender, 0)
         maxwidth = rect.height
         cm += cmp90
     elif rot == 180:  # text upside down
-        point = rect.br + pymupdf.Point(0, -fontsize * ascender)
+        point = rect.br + pypdf.Point(0, -fontsize * ascender)
         maxwidth = rect.width
         cm += cm180
     else:  # rotate clockwise (270 or -90)
-        point = rect.tr + pymupdf.Point(-fontsize * ascender, 0)
+        point = rect.tr + pypdf.Point(-fontsize * ascender, 0)
         maxwidth = rect.height
         cm += cmm90
 
@@ -287,7 +287,7 @@ def shape_insert_single_line_text(
         nres += fill_str
 
     # 输出文本
-    nres += "%sTJ\n" % pymupdf.getTJstr(text, tj_glyphs, simple, ordering)
+    nres += "%sTJ\n" % pypdf.getTJstr(text, tj_glyphs, simple, ordering)
     nres += "ET\n%sQ\n" % emc
 
     # 更新形状内容
@@ -310,7 +310,7 @@ def shape_insert_single_line_text(
 
 
 def insert_single_line_text(
-    page: pymupdf.Page,
+    page: pypdf.Page,
     rect: tuple,
     text: str,
     *,
@@ -350,7 +350,7 @@ def insert_single_line_text(
     Returns:
         unused or deficit rectangle area (float)
     """
-    img = pymupdf.utils.Shape(page)
+    img = pypdf.utils.Shape(page)
     rc = img.insert_single_line_text(
         rect,
         text,
@@ -374,15 +374,15 @@ def insert_single_line_text(
     return rc
 
 
-pymupdf.utils.Shape.insert_single_line_text = shape_insert_single_line_text
-pymupdf.utils.insert_single_line_text = insert_single_line_text
+pypdf.utils.Shape.insert_single_line_text = shape_insert_single_line_text
+pypdf.utils.insert_single_line_text = insert_single_line_text
 
 
 def ocr2pdf(img_paths: list[Path], pdf_path: Path):
     total_start = time.perf_counter()
     print(f"开始处理 {len(img_paths)} 个图片文件...")
 
-    with pymupdf.open() as doc:
+    with pypdf.open() as doc:
         for i, img_path in enumerate(img_paths, 1):
             img_start = time.perf_counter()
             print(f"\n[{i}/{len(img_paths)}] 处理图片: {img_path.name}")
@@ -422,7 +422,7 @@ def ocr2pdf(img_paths: list[Path], pdf_path: Path):
             # PDF生成计时
             pdf_gen_start = time.perf_counter()
             for editor_page in editor_pages:
-                page = pymupdf.utils.new_page(
+                page = pypdf.utils.new_page(
                     doc=doc,
                     pno=-1,
                     width=width,
@@ -443,26 +443,26 @@ def ocr2pdf(img_paths: list[Path], pdf_path: Path):
                     font_name, font_file = auto_detect_font(text)
                     page.insert_font(fontname=font_name, fontfile=font_file)
 
-                    pymupdf.utils.insert_single_line_text(
+                    pypdf.utils.insert_single_line_text(
                         page=page,
                         rect=list(iter(line.rect)),
                         text=text,
                         fontname=font_name,
                         fontsize=line.rect.h / 1.32,
-                        align=pymupdf.TEXT_ALIGN_JUSTIFY,
+                        align=pypdf.TEXT_ALIGN_JUSTIFY,
                     )
 
-                    # pymupdf.utils.draw_rect(
+                    # pypdf.utils.draw_rect(
                     #     page=page,
                     #     rect=list(iter(line.rect)),
                     #     stroke_opacity=0.2,
                     # )
 
                     # for word in line.words:
-                    #     pymupdf.mupdf.fz_encode_character_with_fallback(None, word.text, 0, 0, )
+                    #     pypdf.mupdf.fz_encode_character_with_fallback(None, word.text, 0, 0, )
 
                     #     rect = word.rect.resize(y0=line.rect.y0, y1=line.rect.y1)
-                    #     pymupdf.utils.insert_single_line_text(
+                    #     pypdf.utils.insert_single_line_text(
                     #         page=page,
                     #         rect=list(iter(rect)),
                     #         text=word.text,
@@ -470,13 +470,13 @@ def ocr2pdf(img_paths: list[Path], pdf_path: Path):
                     #         fontsize=word.rect.h / 1.32,
                     #     )
 
-                    #     pymupdf.utils.draw_rect(
+                    #     pypdf.utils.draw_rect(
                     #         page=page,
                     #         rect=list(iter(rect)),
                     #         stroke_opacity=0.2,
                     #     )
 
-                    #     pymupdf.utils.insert_text(
+                    #     pypdf.utils.insert_text(
                     #         page=page,
                     #         point=(word.rect.x0, word.rect.y0),
                     #         text=word.text,
@@ -497,6 +497,10 @@ def ocr2pdf(img_paths: list[Path], pdf_path: Path):
             img_total_time = time.perf_counter() - img_start
             print(f"  图片总耗时: {img_total_time:.3f}秒")
 
+        if doc.page_count == 0:
+            print("  没有生成PDF")
+            return -1
+
         # PDF保存计时
         save_start = time.perf_counter()
         pdf_path.parent.mkdir(parents=True, exist_ok=True)
@@ -507,6 +511,7 @@ def ocr2pdf(img_paths: list[Path], pdf_path: Path):
     total_time = time.perf_counter() - total_start
     print(f"\n总耗时: {total_time:.3f}秒")
     print(f"平均每张图片耗时: {total_time / len(img_paths):.3f}秒")
+    return 0
 
 
 if __name__ == "__main__":

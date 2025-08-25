@@ -9,7 +9,6 @@ dependencies = [
     "fire>=0.7.1",
     "fontmod",
     "pillow>=11.3.0",
-    "pymupdf>=1.26.3",
 ]
 
 [tool.uv.sources]
