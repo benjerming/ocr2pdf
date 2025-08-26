@@ -1,8 +1,7 @@
 import argparse
 import time
 from pathlib import Path
-from fontmod.picker import fz_encode_character_with_system_font
-from fontmod.context import FontContext
+import fontmod
 
 from PIL import Image
 import pypdf
@@ -14,18 +13,16 @@ from ocr2pdf.ocr.ms.page import Page as OCRPage
 
 _format_g = pypdf.format_g
 
-font_ctx = FontContext()
+font_ctx = fontmod.FontContext()
 
 
 def pick_font(text: str):
     font = None
     for c in text:
-        result = fz_encode_character_with_system_font(
-            font_ctx, font, ord(c), False, False, False
-        )
-        if result is None:
-            continue
-        font, _ = result
+        if font is None:
+            font = font_ctx.fallback(c, False)
+        else:
+            font = font_ctx.fallback_with_default(c, False, font)
     return font
 
 
